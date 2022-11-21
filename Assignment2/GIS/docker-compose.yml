@@ -1,0 +1,15 @@
+version: "3"
+services:
+  database:
+    build: ./database
+    ports:
+      - "25432:5432"
+    volumes:
+      - ./database/data:/importdata
+
+  backend:
+    build: ./Backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Backend/code:/var/opt/gis
