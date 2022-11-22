@@ -20,4 +20,4 @@ ENV FLASK_APP=server.py
 ENV FLASK_DEBUG=1
 
 # run flask server
-CMD [ "python", "-m", "flask", "run", "--host=0.0.0.0" ]
+CMD [ "python", "-u" ,"-m", "flask", "run", "--host=0.0.0.0" ]

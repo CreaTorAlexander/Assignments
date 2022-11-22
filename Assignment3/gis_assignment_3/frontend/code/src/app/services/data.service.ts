@@ -25,4 +25,18 @@ export class DataService {
       { name: string; latitude: number; longitude: number }[]
     >(url, {}, httpOptions);
   }
+
+  /**
+   * Get Specific Amenity from Backend
+   */
+   public getAmenity(amenity: string): Observable<
+   { name: string; latitude: number; longitude: number }[]
+ > {
+   const body = `{"amenity":"${amenity}"}`
+   console.log(body)
+   const headers = { 'content-type': 'application/json'}  
+   const url = 'http://localhost:5000/get-amenity';
+   return this.http.post(url, body, headers);
+ }
 }
+

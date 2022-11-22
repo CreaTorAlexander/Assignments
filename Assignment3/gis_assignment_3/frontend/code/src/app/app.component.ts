@@ -39,7 +39,12 @@ export class AppComponent {
   }
 
   onGetAmenityAdded(amenity: string) {
-    // query the db here
-    console.log("INSIDE THE PARENT COMPONENT", amenity)
+    // send to the backend 
+    this.dataservice.getAmenity(amenity).subscribe((amenity) => {
+      console.log(amenity)
+      this.amenities = amenity
+    })
+
+    
   }
 }

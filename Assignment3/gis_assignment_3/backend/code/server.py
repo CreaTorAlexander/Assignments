@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 import psycopg2
@@ -17,15 +17,32 @@ SELECT points.name, ST_Y(points.way) as latitude , ST_X(points.way) as longitude
 from planet_osm_point points join konstanz on st_contains(konstanz.way, points.way)
 where points.amenity in ('bar', 'pub')
 """
+    
+    with psycopg2.connect(host="database", port=5432, dbname="gis_db", user="gis_user", password="gis_pass") as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            results = cursor.fetchall()
+    
+    return jsonify([{'name': r[0], 'latitude': r[1], 'longitude': r[2]} for r in results]), 200
 
-@app.route('/get-amenity', methods=['POST', 'GET'])
-def amenity():
-    if request.method == 'POST':
-        data = request.form
 
-        print(data)
+@app.route('/get-amenity', methods=["POST"])
+def getAmenity():
+    print("HELLO ")
+    print(request.get_json(force=True))
 
+    content = request.get_json(force=True)
+    amenity = content.get('amenity')
 
+    query = """WITH konstanz AS (
+    SELECT way
+    FROM planet_osm_polygon
+    WHERE admin_level='8' and name = 'Konstanz'
+)
+SELECT points.name, ST_Y(points.way) as latitude , ST_X(points.way) as longitude
+from planet_osm_point points join konstanz on st_contains(konstanz.way, points.way)
+where points.amenity='{query_name}'
+""".format(query_name=amenity)
     
     with psycopg2.connect(host="database", port=5432, dbname="gis_db", user="gis_user", password="gis_pass") as conn:
         with conn.cursor() as cursor:
