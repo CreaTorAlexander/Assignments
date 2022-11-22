@@ -1,4 +1,5 @@
 <div id="app">
-  <app-settings (markerAdded)="onAddMarker($event)" (pubsAdded)="onPubsAdded()"> </app-settings>
+  <app-settings (markerAdded)="onAddMarker($event)" (pubsAdded)="onPubsAdded()" (getAmenity)="onGetAmenityAdded($event)"> </app-settings>
   <app-map [amenities]="this.amenities"> </app-map>
+  <!-- <app-amenity-output (getAmenity)="addAmenity($event)"></app-item-output> -->
 </div>

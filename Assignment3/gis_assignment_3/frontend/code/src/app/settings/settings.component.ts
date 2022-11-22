@@ -18,6 +18,9 @@ export class SettingsComponent {
   @Output()
   pubsAdded: EventEmitter<boolean> = new EventEmitter<boolean>();
 
+  // own passing 
+ @Output()
+ getAmenity: EventEmitter<string> = new EventEmitter<string>();
 
   // location form stores and validates the inputs from our forms defined in the html document
   locationForm: FormGroup;
@@ -51,5 +54,9 @@ export class SettingsComponent {
    */
   addPubs(): void {
     this.pubsAdded.emit(true);
+  }
+
+  addgetAmenity(name: string) {
+    this.getAmenity.emit(name);
   }
 }

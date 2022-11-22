@@ -31,7 +31,20 @@
     <button class="button" type="submit" mat-stroked-button>Add Marker</button>
   </form>
 
+  <div class="amenity">
+    <label for="amenity">Amenity: </label>
+    <input
+      id="amenity"
+      name="amenity"
+      type="text"
+      placeholder="Restaurant"
+      #getAmenity
+      />
+      <button class="button"  (click)="addgetAmenity(getAmenity.value)">Submit</button>
+  </div>
+
   <div class="pubs">
     <button class="button" (click)="addPubs()" mat-stroked-button>Add Pubs</button>
   </div>
+
 </div>

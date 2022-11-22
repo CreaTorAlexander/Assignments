@@ -15,6 +15,7 @@ export class AppComponent {
   // option 2: use @Input() in the child component
   amenities: { name: string; latitude: number; longitude: number }[] = [];
 
+
   /*
    * Services or other dependencies are often imported via dependency injection.
    * See https://angular.io/guide/dependency-injection for more details.
@@ -35,5 +36,10 @@ export class AppComponent {
     this.dataservice.getPubs().subscribe((pubs) => {
       this.amenities = pubs;
     });
+  }
+
+  onGetAmenityAdded(amenity: string) {
+    // query the db here
+    console.log("INSIDE THE PARENT COMPONENT", amenity)
   }
 }
