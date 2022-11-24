@@ -41,7 +41,7 @@ export class AppComponent {
   onGetAmenityAdded(amenity: string) {
     // send to the backend 
     this.dataservice.getAmenity(amenity).subscribe((amenity) => {
-      console.log(amenity)
+      console.log("INSIDE APP COMPONENT", amenity)
       this.amenities = amenity
     })
 

@@ -36,7 +36,7 @@ export class DataService {
    console.log(body)
    const headers = { 'content-type': 'application/json'}  
    const url = 'http://localhost:5000/get-amenity';
-   return this.http.post(url, body, headers);
+   return this.http.post<any>(url, body, {headers});
  }
 }
 
