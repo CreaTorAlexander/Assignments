@@ -11,6 +11,7 @@ const httpOptions = {
 @Injectable({
   providedIn: 'root',
 })
+
 export class DataService {
   constructor(private http: HttpClient) {}
 
@@ -28,6 +29,7 @@ export class DataService {
 
   /**
    * Get Specific Amenity from Backend
+   * Observable because of the asynchronous behavior
    */
    public getAmenity(amenity: string): Observable<
    { name: string; latitude: number; longitude: number }[]

@@ -1,0 +1,195 @@
+diff --git a/backend/code/server.py b/backend/code/server.py
+index 38fa22e3c486d0e563a13b29ecb9817c39acd552..29f4b35984cf557a5a7dc690d8fe2043d6c59d14 100644
+--- a/backend/code/server.py
++++ b/backend/code/server.py
+@@ -1,4 +1,4 @@
+-from flask import Flask, jsonify
++from flask import Flask, jsonify, request
+ from flask_cors import CORS
+ 
+ import psycopg2
+@@ -24,3 +24,29 @@ where points.amenity in ('bar', 'pub')
+             results = cursor.fetchall()
+     
+     return jsonify([{'name': r[0], 'latitude': r[1], 'longitude': r[2]} for r in results]), 200
++
++
++## get the name, latitude, longitude of all amenities of a given type
++@app.route('/amenities', methods=["POST"])
++def amenities():
++
++    ## getting the amenity type from the post request
++    am = request.json.get('amenity', None)
++
++    query = """WITH konstanz AS (
++    SELECT way
++    FROM planet_osm_polygon
++    WHERE admin_level='8' and name = 'Konstanz'
++)
++SELECT points.name, ST_Y(points.way) as latitude , ST_X(points.way) as longitude
++from planet_osm_point points join konstanz on st_contains(konstanz.way, points.way)
++where points.amenity = %s
++"""
++    q_args = (am,)
++    
++    with psycopg2.connect(host="database", port=5432, dbname="gis_db", user="gis_user", password="gis_pass") as conn:
++        with conn.cursor() as cursor:
++            cursor.execute(query, q_args)
++            results = cursor.fetchall()
++    
++    return jsonify([{'name': r[0], 'latitude': r[1], 'longitude': r[2]} for r in results]), 200
+diff --git a/frontend/code/src/app/app.component.html b/frontend/code/src/app/app.component.html
+index 8adc30aeda11c68f298347646bc1380a61297474..3a9d3001ace7519284d912bc7ba7783113a00cc7 100644
+--- a/frontend/code/src/app/app.component.html
++++ b/frontend/code/src/app/app.component.html
+@@ -1,4 +1,6 @@
+ <div id="app">
+-  <app-settings (markerAdded)="onAddMarker($event)" (pubsAdded)="onPubsAdded()"> </app-settings>
++  <!-- we listen to the showAmenities Output from the app-settings component with the onAmenitiesAdded function
++  -->
++  <app-settings (markerAdded)="onAddMarker($event)" (pubsAdded)="onPubsAdded()" (showAmenities)="onAmenitiesAdded($event)"> </app-settings>
+   <app-map [amenities]="this.amenities"> </app-map>
+ </div>
+diff --git a/frontend/code/src/app/app.component.ts b/frontend/code/src/app/app.component.ts
+index 8fa86774e9c0cf63a0db16fcafdb7f3a7568bf6e..554c1f48a07fd3c5b552c82cb4bd1b54fccc7855 100644
+--- a/frontend/code/src/app/app.component.ts
++++ b/frontend/code/src/app/app.component.ts
+@@ -36,4 +36,14 @@ export class AppComponent {
+       this.amenities = pubs;
+     });
+   }
++
++  /*
++   * Retrieve a specific amenity type from backend and override the member variable.
++  */
++  onAmenitiesAdded($event: { amenity: string }) {
++    this.dataservice.getAmenities($event.amenity).subscribe((amenities) => {
++      this.amenities = amenities;
++    });
++  }
++  
+ }
+diff --git a/frontend/code/src/app/services/data.service.ts b/frontend/code/src/app/services/data.service.ts
+index c4e32ce9073e22c494f448fb0f3b5ff96fb09eac..f8c206b832abef1e2f2113d4568079e34b1673fc 100644
+--- a/frontend/code/src/app/services/data.service.ts
++++ b/frontend/code/src/app/services/data.service.ts
+@@ -25,4 +25,17 @@ export class DataService {
+       { name: string; latitude: number; longitude: number }[]
+     >(url, {}, httpOptions);
+   }
++
++
++  /**
++   * Get amenities from Backend
++   */
++  public getAmenities(amenity: string): Observable<
++    { name: string; latitude: number; longitude: number }[]
++  > {
++    const url = 'http://localhost:5000/amenities';
++    return this.http.post<
++      { name: string; latitude: number; longitude: number }[]
++    >(url, {amenity: amenity}, httpOptions);
++  } 
+ }
+diff --git a/frontend/code/src/app/settings/settings.component.html b/frontend/code/src/app/settings/settings.component.html
+index 56119fd56dc51841726a9773604738d23b4062cd..a4010535a503afd17d9433ca55c6cbb8b3f51ee1 100644
+--- a/frontend/code/src/app/settings/settings.component.html
++++ b/frontend/code/src/app/settings/settings.component.html
+@@ -1,6 +1,7 @@
+ <div id="settings-panel">
+   <form
+     id="location-form"
++    class="form-container"
+     [formGroup]="this.locationForm"
+     (ngSubmit)="onSubmit(this.locationForm.value)"
+   >
+@@ -31,6 +32,24 @@
+     <button class="button" type="submit" mat-stroked-button>Add Marker</button>
+   </form>
+ 
++  <!-- The form that stores the amenity type to be queried in the input -->
++  <form
++    id="amenity-form"
++    class="form-container"
++    [formGroup]="this.amenityForm"
++    (ngSubmit)="onAmenityFormSubmit(this.amenityForm.value)"
++  >
++    <mat-form-field>
++      <mat-label>Amenity Type</mat-label>
++      <input
++        matInput
++        placeholder="atm"
++        formControlName="amenity"
++      />
++    </mat-form-field>
++    <button class="button" type="submit" mat-stroked-button>Show Amenities</button>
++  </form>
++
+   <div class="pubs">
+     <button class="button" (click)="addPubs()" mat-stroked-button>Add Pubs</button>
+   </div>
+diff --git a/frontend/code/src/app/settings/settings.component.scss b/frontend/code/src/app/settings/settings.component.scss
+index 4288174f696c9fc447c81fdb8da64ebda82940f8..46067418cf2fd895788d97c7705f29fbf00a4420 100644
+--- a/frontend/code/src/app/settings/settings.component.scss
++++ b/frontend/code/src/app/settings/settings.component.scss
+@@ -6,6 +6,10 @@
+ }
+ 
+ #location-form {
++  display: none; // hide the location form
++}
++
++.form-container {
+   display: flex;
+   flex-direction: row;
+   align-items: center;
+@@ -18,6 +22,7 @@
+ }
+ 
+ .pubs {
++  display: none; // hide the add pubs button
+   margin-left: auto;
+   margin-right: 25px;
+ }
+diff --git a/frontend/code/src/app/settings/settings.component.ts b/frontend/code/src/app/settings/settings.component.ts
+index 04b17de1a26ecc8879be8bf421c327cbd9851a9e..a99bc6e53f897931a4e5f3f978e134b4a8078cdd 100644
+--- a/frontend/code/src/app/settings/settings.component.ts
++++ b/frontend/code/src/app/settings/settings.component.ts
+@@ -18,9 +18,15 @@ export class SettingsComponent {
+   @Output()
+   pubsAdded: EventEmitter<boolean> = new EventEmitter<boolean>();
+ 
++  // this output can be listened to in the parent component
++  @Output()
++  showAmenities: EventEmitter<{ amenity: string }> = new EventEmitter<{ amenity: string }>();
++  
+ 
+   // location form stores and validates the inputs from our forms defined in the html document
+   locationForm: FormGroup;
++  // just like the location form, we add another FormGroup for our amenity input field
++  amenityForm: FormGroup;
+ 
+   constructor(private fb: FormBuilder) {
+     this.locationForm = fb.group({
+@@ -35,7 +41,21 @@ export class SettingsComponent {
+         Validators.max(180),
+       ]),
+     });
++
++    // here our only form validation criteria is that the input form has a non-empty value
++    this.amenityForm = fb.group({
++      amenity: fb.control("atm", Validators.required)
++    })
++  }
++
++  /**
++   * When the Show Amenities button was clicked, emit the location where the marker should be added
++   * @param amenityFormValue object containing the amenity type as a string value
++   */
++  onAmenityFormSubmit(amenityFormValue: { amenity: string }): void {
++    this.showAmenities.emit(amenityFormValue);
+   }
++  
+ 
+   /**
+    * When the add marker button was clicked, emit the location where the marker should be added

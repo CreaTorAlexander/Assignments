@@ -31,6 +31,9 @@ def getAmenity():
     print("HELLO ")
     print(request.get_json(force=True))
 
+    # app.logger.info('%s logged in successfully', user.username)
+
+
     content = request.get_json(force=True)
     amenity = content.get('amenity')
 
